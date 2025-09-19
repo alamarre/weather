@@ -6,6 +6,7 @@ using Weather.Api;
 
 namespace Weather.Api.Tests
 {
+    [TestFixture]
     public class PingControllerTests
     {
         [Test]
