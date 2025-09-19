@@ -1,6 +1,6 @@
 using System.Web.Http;
 
-namespace WeatherApi.Controllers
+namespace Weather.Api.Controllers
 {
     public class PingController : ApiController
     {

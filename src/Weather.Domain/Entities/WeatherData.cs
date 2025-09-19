@@ -1,6 +1,6 @@
 using System;
 
-namespace WeatherApi.Models
+namespace Weather.Domain.Entities
 {
     public class WeatherData
     {

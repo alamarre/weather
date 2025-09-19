@@ -2,9 +2,9 @@ using System;
 using System.Data.SqlClient;
 using System.IO;
 using NUnit.Framework;
-using WeatherApi.Services;
+using Weather.Infrastructure.Services;
 
-namespace WeatherApi.Tests
+namespace Weather.Api.Tests
 {
     public class WeatherDataImporterTests
     {
@@ -13,7 +13,9 @@ namespace WeatherApi.Tests
         {
             var connStr = Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING");
             if (string.IsNullOrEmpty(connStr))
+            {
                 Assert.Ignore("SQL connection string not set");
+            }
 
             var root = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..");
             var sqlPath = Path.Combine(root, "sql", "CreateWeatherDataTable.sql");
@@ -26,6 +28,7 @@ namespace WeatherApi.Tests
                 {
                     cmd.ExecuteNonQuery();
                 }
+
                 var createSql = File.ReadAllText(sqlPath);
                 using (var cmd = new SqlCommand(createSql, conn))
                 {
@@ -33,7 +36,8 @@ namespace WeatherApi.Tests
                 }
             }
 
-            WeatherDataImporter.Import(csvPath, connStr);
+            var importer = new CsvWeatherDataImportService(connStr);
+            importer.Import(csvPath);
 
             using (var conn = new SqlConnection(connStr))
             using (var cmd = new SqlCommand("SELECT COUNT(*) FROM WeatherData", conn))

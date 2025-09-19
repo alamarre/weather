@@ -1,10 +1,10 @@
-using NUnit.Framework;
 using System.Net.Http;
 using System.Threading;
 using System.Web.Http;
-using WeatherApi;
+using NUnit.Framework;
+using Weather.Api;
 
-namespace WeatherApi.Tests
+namespace Weather.Api.Tests
 {
     public class PingControllerTests
     {
