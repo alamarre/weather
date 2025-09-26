@@ -44,7 +44,7 @@ namespace Weather.Api.Tests
             {
                 conn.Open();
                 var count = (int)cmd.ExecuteScalar();
-                Assert.Greater(count, 0);
+                Assert.That(count, Is.GreaterThan(0));
             }
         }
     }
