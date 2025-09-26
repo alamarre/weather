@@ -22,7 +22,7 @@ namespace Weather.Api.Tests
                 var response = client.SendAsync(request, CancellationToken.None).Result;
                 var content = response.Content.ReadAsStringAsync().Result;
 
-                Assert.AreEqual("pong", content.Trim('"'));
+                Assert.That("pong", Is.EqualTo(content.Trim('"')));
             }
         }
     }
