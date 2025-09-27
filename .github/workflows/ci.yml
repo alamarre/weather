@@ -7,6 +7,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '9.0.x'
       - name: Configure SQL LocalDB
         shell: pwsh
         run: |
@@ -28,8 +31,8 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          msbuild Weather.sln /p:Configuration=Debug
+          dotnet build Weather.sln
       - name: Test
         shell: pwsh
         run: |
-          .\packages\NUnit.ConsoleRunner.3.17.0\tools\nunit3-console.exe tests\Weather.Api.Tests\bin\Debug\Weather.Api.Tests.dll
+         dotnet test
