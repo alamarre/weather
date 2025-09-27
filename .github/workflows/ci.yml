@@ -26,11 +26,10 @@ jobs:
           curl -L https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -o nuget.exe
       - name: Restore packages
         run: |
-          mono nuget.exe restore Weather.sln
           mono nuget.exe install NUnit.ConsoleRunner -Version 3.17.0 -OutputDirectory packages
       - name: Build
         run: |
-          xbuild Weather.sln
+          msbuild /p:Configuration=Debug Weather.sln
       - name: Test
         run: |
           mono packages/NUnit.ConsoleRunner.3.17.0/tools/nunit3-console.exe WeatherApi.Tests/bin/Debug/WeatherApi.Tests.dll --framework=mono-4.0
