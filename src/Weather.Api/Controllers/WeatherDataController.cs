@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http;
 using Weather.Application.Abstractions;
 
@@ -16,11 +18,11 @@ namespace Weather.Api.Controllers
 
         [HttpGet]
         [Route("")]
-        public IHttpActionResult Get(DateTime? start = null, DateTime? end = null)
+        public async Task<IHttpActionResult> Get(DateTime? start = null, DateTime? end = null, CancellationToken cancellationToken = default)
         {
             try
             {
-                var data = _weatherDataService.GetWeatherData(start, end);
+                var data = await _weatherDataService.GetWeatherData(start, end, cancellationToken);
                 return Ok(data);
             }
             catch (InvalidOperationException ex)

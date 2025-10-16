@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Weather.Domain.Entities;
 using Weather.Domain.Repositories;
@@ -21,7 +23,7 @@ namespace Weather.Infrastructure.Data
             _connectionString = connectionString;
         }
 
-        public IEnumerable<WeatherData> GetWeatherData(DateTime? start, DateTime? end)
+        public async Task<IEnumerable<WeatherData>> GetWeatherData(DateTime? start, DateTime? end, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(_connectionString))
             {
@@ -38,23 +40,23 @@ namespace Weather.Infrastructure.Data
 
                 connection.Open();
 
-                using (var reader = command.ExecuteReader())
+                using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (reader.Read())
                     {
                         results.Add(new WeatherData
                         {
                             DateTime = reader.GetDateTime(0),
-                            TempC = reader.IsDBNull(1) ? (double?)null : reader.GetDouble(1),
-                            DewPointTempC = reader.IsDBNull(2) ? (double?)null : reader.GetDouble(2),
-                            RelHum = reader.IsDBNull(3) ? (int?)null : reader.GetInt32(3),
-                            PrecipAmountMm = reader.IsDBNull(4) ? (double?)null : reader.GetDouble(4),
-                            WindDirDeg = reader.IsDBNull(5) ? (int?)null : reader.GetInt32(5),
-                            WindSpdKmH = reader.IsDBNull(6) ? (double?)null : reader.GetDouble(6),
-                            VisibilityKm = reader.IsDBNull(7) ? (double?)null : reader.GetDouble(7),
-                            StnPressKPa = reader.IsDBNull(8) ? (double?)null : reader.GetDouble(8),
-                            Hmdx = reader.IsDBNull(9) ? (double?)null : reader.GetDouble(9),
-                            WindChill = reader.IsDBNull(10) ? (double?)null : reader.GetDouble(10),
+                            TempC = reader.IsDBNull(1) ? null : reader.GetDouble(1),
+                            DewPointTempC = reader.IsDBNull(2) ? null : reader.GetDouble(2),
+                            RelHum = reader.IsDBNull(3) ? null : reader.GetInt32(3),
+                            PrecipAmountMm = reader.IsDBNull(4) ? null : reader.GetDouble(4),
+                            WindDirDeg = reader.IsDBNull(5) ? null : reader.GetInt32(5),
+                            WindSpdKmH = reader.IsDBNull(6) ? null : reader.GetDouble(6),
+                            VisibilityKm = reader.IsDBNull(7) ? null : reader.GetDouble(7),
+                            StnPressKPa = reader.IsDBNull(8) ? null : reader.GetDouble(8),
+                            Hmdx = reader.IsDBNull(9) ? null : reader.GetDouble(9),
+                            WindChill = reader.IsDBNull(10) ? null : reader.GetDouble(10),
                             Weather = reader.IsDBNull(11) ? null : reader.GetString(11)
                         });
                     }
