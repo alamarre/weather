@@ -4,33 +4,30 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    services:
-      sql:
-        image: mcr.microsoft.com/mssql/server:2019-latest
-        env:
-          SA_PASSWORD: "YourStrong!Passw0rd"
-          ACCEPT_EULA: "Y"
-        ports:
-          - 1433:1433
+    runs-on: windows-latest
     env:
-      SQL_CONNECTION_STRING: "Server=localhost,1433;Database=master;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True"
+      SQL_CONNECTION_STRING: "Server=(localdb)\\WeatherLocalDb;Database=WeatherTest;Integrated Security=true;TrustServerCertificate=True"
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Mono
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+      - name: Prepare LocalDB
+        shell: pwsh
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mono-devel
-      - name: Install NuGet
-        run: |
-          curl -L https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -o nuget.exe
+          sqllocaldb create WeatherLocalDb -s
+          sqlcmd -S "(localdb)\WeatherLocalDb" -Q "IF DB_ID('WeatherTest') IS NULL CREATE DATABASE WeatherTest;"
       - name: Restore packages
+        shell: pwsh
         run: |
-          mono nuget.exe restore Weather.sln
-          mono nuget.exe install NUnit.ConsoleRunner -Version 3.17.0 -OutputDirectory packages
+          nuget restore Weather.sln
+          nuget install NUnit.ConsoleRunner -Version 3.17.0 -OutputDirectory packages
       - name: Build
+        shell: pwsh
         run: |
-          xbuild Weather.sln
+          msbuild Weather.sln /p:Configuration=Debug
       - name: Test
+        shell: pwsh
         run: |
-          mono packages/NUnit.ConsoleRunner.3.17.0/tools/nunit3-console.exe WeatherApi.Tests/bin/Debug/WeatherApi.Tests.dll --framework=mono-4.0
+          .\packages\NUnit.ConsoleRunner.3.17.0\tools\nunit3-console.exe .\tests\Weather.Api.Tests\bin\Debug\Weather.Api.Tests.dll
