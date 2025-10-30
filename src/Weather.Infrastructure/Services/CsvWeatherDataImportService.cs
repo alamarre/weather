@@ -1,8 +1,11 @@
 using System;
-using System.Data.SqlClient;
+using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
-using Microsoft.VisualBasic.FileIO;
+using System.IO;
+using System.Text;
 using Weather.Application.Abstractions;
+using Weather.Infrastructure.Data;
 
 namespace Weather.Infrastructure.Services
 {
@@ -27,48 +30,105 @@ namespace Weather.Infrastructure.Services
                 throw new InvalidOperationException("SQL connection string not configured");
             }
 
-            using (var parser = new TextFieldParser(csvPath))
+            using (var reader = new StreamReader(csvPath))
+            using (var connection = DbConnectionFactory.Create(_connectionString))
             {
-                parser.TextFieldType = FieldType.Delimited;
-                parser.SetDelimiters(",");
-                parser.ReadLine();
+                connection.Open();
 
-                using (var connection = new SqlConnection(_connectionString))
+                const string sql = "INSERT INTO WeatherData (StationName, DateTime, TempC, DewPointTempC, RelHum, PrecipAmountMm, WindDirDeg, WindSpdKmH, VisibilityKm, StnPressKPa, Hmdx, WindChill, Weather) VALUES (@StationName, @DateTime, @TempC, @DewPointTempC, @RelHum, @PrecipAmountMm, @WindDirDeg, @WindSpdKmH, @VisibilityKm, @StnPressKPa, @Hmdx, @WindChill, @Weather)";
+
+                // skip header
+                reader.ReadLine();
+
+                using (var command = connection.CreateCommand())
                 {
-                    connection.Open();
+                    command.CommandText = sql;
 
-                    const string sql = "INSERT INTO WeatherData (StationName, DateTime, TempC, DewPointTempC, RelHum, PrecipAmountMm, WindDirDeg, WindSpdKmH, VisibilityKm, StnPressKPa, Hmdx, WindChill, Weather) VALUES (@StationName, @DateTime, @TempC, @DewPointTempC, @RelHum, @PrecipAmountMm, @WindDirDeg, @WindSpdKmH, @VisibilityKm, @StnPressKPa, @Hmdx, @WindChill, @Weather)";
-
-                    using (var command = new SqlCommand(sql, connection))
+                    while (!reader.EndOfStream)
                     {
-                        while (!parser.EndOfData)
+                        var line = reader.ReadLine();
+                        if (string.IsNullOrWhiteSpace(line))
                         {
-                            var fields = parser.ReadFields();
-                            if (fields == null || fields.Length < 31)
-                            {
-                                continue;
-                            }
-
-                            command.Parameters.Clear();
-                            command.Parameters.AddWithValue("@StationName", fields[2]);
-                            command.Parameters.AddWithValue("@DateTime", DateTime.Parse(fields[4], CultureInfo.InvariantCulture));
-                            command.Parameters.AddWithValue("@TempC", ParseNullable(fields[10]));
-                            command.Parameters.AddWithValue("@DewPointTempC", ParseNullable(fields[12]));
-                            command.Parameters.AddWithValue("@RelHum", ParseNullableInt(fields[14]));
-                            command.Parameters.AddWithValue("@PrecipAmountMm", ParseNullable(fields[16]));
-                            command.Parameters.AddWithValue("@WindDirDeg", ParseNullableInt(fields[18]));
-                            command.Parameters.AddWithValue("@WindSpdKmH", ParseNullable(fields[20]));
-                            command.Parameters.AddWithValue("@VisibilityKm", ParseNullable(fields[22]));
-                            command.Parameters.AddWithValue("@StnPressKPa", ParseNullable(fields[24]));
-                            command.Parameters.AddWithValue("@Hmdx", ParseNullable(fields[26]));
-                            command.Parameters.AddWithValue("@WindChill", ParseNullable(fields[28]));
-                            command.Parameters.AddWithValue("@Weather", fields.Length > 30 ? fields[30] : (object)DBNull.Value);
-
-                            command.ExecuteNonQuery();
+                            continue;
                         }
+
+                        var fields = ParseCsvLine(line);
+                        if (fields.Count < 31)
+                        {
+                            continue;
+                        }
+
+                        command.Parameters.Clear();
+                        AddParameter(command, "@StationName", fields[2]);
+                        AddParameter(command, "@DateTime", DateTime.Parse(fields[4], CultureInfo.InvariantCulture));
+                        AddParameter(command, "@TempC", ParseNullable(fields[10]));
+                        AddParameter(command, "@DewPointTempC", ParseNullable(fields[12]));
+                        AddParameter(command, "@RelHum", ParseNullableInt(fields[14]));
+                        AddParameter(command, "@PrecipAmountMm", ParseNullable(fields[16]));
+                        AddParameter(command, "@WindDirDeg", ParseNullableInt(fields[18]));
+                        AddParameter(command, "@WindSpdKmH", ParseNullable(fields[20]));
+                        AddParameter(command, "@VisibilityKm", ParseNullable(fields[22]));
+                        AddParameter(command, "@StnPressKPa", ParseNullable(fields[24]));
+                        AddParameter(command, "@Hmdx", ParseNullable(fields[26]));
+                        AddParameter(command, "@WindChill", ParseNullable(fields[28]));
+                        AddParameter(command, "@Weather", fields.Count > 30 ? fields[30] : (object)DBNull.Value);
+
+                        command.ExecuteNonQuery();
                     }
                 }
             }
+        }
+
+        private static void AddParameter(IDbCommand command, string name, object value)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value ?? DBNull.Value;
+            command.Parameters.Add(parameter);
+        }
+
+        private static IReadOnlyList<string> ParseCsvLine(string line)
+        {
+            var values = new List<string>();
+            if (line == null)
+            {
+                return values;
+            }
+
+            var builder = new StringBuilder();
+            var inQuotes = false;
+
+            for (var i = 0; i < line.Length; i++)
+            {
+                var current = line[i];
+                if (current == '\"')
+                {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '\"')
+                    {
+                        builder.Append('\"');
+                        i++;
+                    }
+                    else
+                    {
+                        inQuotes = !inQuotes;
+                    }
+
+                    continue;
+                }
+
+                if (current == ',' && !inQuotes)
+                {
+                    values.Add(builder.ToString());
+                    builder.Clear();
+                    continue;
+                }
+
+                builder.Append(current);
+            }
+
+            values.Add(builder.ToString());
+
+            return values;
         }
 
         private static object ParseNullable(string value)

@@ -1,7 +1,8 @@
 using System;
-using System.Data.SqlClient;
+using System.Data;
 using System.IO;
 using NUnit.Framework;
+using Weather.Infrastructure.Data;
 using Weather.Infrastructure.Services;
 
 namespace Weather.Api.Tests
@@ -11,40 +12,59 @@ namespace Weather.Api.Tests
         [Test]
         public void Import_InsertsRows_WhenConnectionStringProvided()
         {
-            var connStr = Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING");
-            if (string.IsNullOrEmpty(connStr))
-            {
-                Assert.Ignore("SQL connection string not set");
-            }
+            var dbPath = Path.Combine(Path.GetTempPath(), $"weather-test-{Guid.NewGuid():N}.db");
+            var connStr = $"sqlite:Data Source={dbPath};Version=3;";
+            Environment.SetEnvironmentVariable("SQL_CONNECTION_STRING", connStr);
 
-            var root = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..");
-            var sqlPath = Path.Combine(root, "sql", "CreateWeatherDataTable.sql");
+            var root = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", ".."));
             var csvPath = Path.Combine(root, "Data", "kitchener_2025_07.csv");
 
-            using (var conn = new SqlConnection(connStr))
+            using (var conn = DbConnectionFactory.Create(connStr))
             {
                 conn.Open();
-                using (var cmd = new SqlCommand("IF OBJECT_ID('WeatherData','U') IS NOT NULL DROP TABLE WeatherData", conn))
-                {
-                    cmd.ExecuteNonQuery();
-                }
-
-                var createSql = File.ReadAllText(sqlPath);
-                using (var cmd = new SqlCommand(createSql, conn))
-                {
-                    cmd.ExecuteNonQuery();
-                }
+                ExecuteNonQuery(conn, "DROP TABLE IF EXISTS WeatherData");
+                ExecuteNonQuery(conn, @"CREATE TABLE WeatherData (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    StationName TEXT NOT NULL,
+    DateTime TEXT NOT NULL,
+    TempC REAL NULL,
+    DewPointTempC REAL NULL,
+    RelHum INTEGER NULL,
+    PrecipAmountMm REAL NULL,
+    WindDirDeg INTEGER NULL,
+    WindSpdKmH REAL NULL,
+    VisibilityKm REAL NULL,
+    StnPressKPa REAL NULL,
+    Hmdx REAL NULL,
+    WindChill REAL NULL,
+    Weather TEXT NULL
+)");
             }
 
             var importer = new CsvWeatherDataImportService(connStr);
             importer.Import(csvPath);
 
-            using (var conn = new SqlConnection(connStr))
-            using (var cmd = new SqlCommand("SELECT COUNT(*) FROM WeatherData", conn))
+            using (var conn = DbConnectionFactory.Create(connStr))
+            using (var cmd = conn.CreateCommand())
             {
                 conn.Open();
-                var count = (int)cmd.ExecuteScalar();
+                cmd.CommandText = "SELECT COUNT(*) FROM WeatherData";
+                var count = Convert.ToInt32(cmd.ExecuteScalar());
                 Assert.Greater(count, 0);
+            }
+
+            if (File.Exists(dbPath))
+            {
+                File.Delete(dbPath);
+            }
+        }
+
+        private static void ExecuteNonQuery(IDbConnection connection, string sql)
+        {
+            using (var command = connection.CreateCommand())
+            {
+                command.CommandText = sql;
+                command.ExecuteNonQuery();
             }
         }
     }

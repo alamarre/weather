@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data;
 using Weather.Domain.Entities;
 using Weather.Domain.Repositories;
 
@@ -30,11 +30,12 @@ namespace Weather.Infrastructure.Data
 
             var results = new List<WeatherData>();
 
-            using (var connection = new SqlConnection(_connectionString))
-            using (var command = new SqlCommand(Query, connection))
+            using (var connection = DbConnectionFactory.Create(_connectionString))
+            using (var command = connection.CreateCommand())
             {
-                command.Parameters.AddWithValue("@start", (object)start ?? DBNull.Value);
-                command.Parameters.AddWithValue("@end", (object)end ?? DBNull.Value);
+                command.CommandText = Query;
+                AddParameter(command, "@start", start);
+                AddParameter(command, "@end", end);
 
                 connection.Open();
 
@@ -62,6 +63,14 @@ namespace Weather.Infrastructure.Data
             }
 
             return results;
+        }
+
+        private static void AddParameter(IDbCommand command, string name, object value)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value ?? DBNull.Value;
+            command.Parameters.Add(parameter);
         }
     }
 }

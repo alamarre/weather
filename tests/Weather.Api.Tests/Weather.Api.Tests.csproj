@@ -28,6 +28,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Mono.Data.Sqlite" />
     <Reference Include="Newtonsoft.Json.Bson, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.Bson.1.0.2\lib\net45\Newtonsoft.Json.Bson.dll</HintPath>
     </Reference>
@@ -68,6 +69,10 @@
     <ProjectReference Include="..\..\src\Weather.Api\Weather.Api.csproj">
       <Project>{7C8B7110-D7DC-456A-B36E-CB3742B126ED}</Project>
       <Name>Weather.Api</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\Weather.Application\Weather.Application.csproj">
+      <Project>{D57AC8EA-3B42-4115-AF33-9D03E11AF86C}</Project>
+      <Name>Weather.Application</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\src\Weather.Infrastructure\Weather.Infrastructure.csproj">
       <Project>{7D740BBB-B08B-49B6-A017-8B49615F29C8}</Project>
