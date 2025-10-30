@@ -17,7 +17,11 @@ namespace Weather.Api.Tests
                 Assert.Ignore("SQL connection string not set");
             }
 
-            var root = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..");
+            var root = Path.Combine(TestContext.CurrentContext.TestDirectory);
+            while(!Directory.Exists(Path.Combine(root, "sql")))
+            {
+                root = Directory.GetParent(root).FullName;
+            }
             var sqlPath = Path.Combine(root, "sql", "CreateWeatherDataTable.sql");
             var csvPath = Path.Combine(root, "Data", "kitchener_2025_07.csv");
 
