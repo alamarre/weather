@@ -3,6 +3,7 @@ using System.Threading;
 using System.Web.Http;
 using NUnit.Framework;
 using Weather.Api;
+#if NETFRAMEWORK
 
 namespace Weather.Api.Tests
 {
@@ -27,3 +28,4 @@ namespace Weather.Api.Tests
         }
     }
 }
+#endif
