@@ -1,0 +1,31 @@
+name: Modern .NET CI
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [ main ]
+
+permissions: write-all
+
+jobs:
+  test-apis:
+    name: Test APIs
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0'
+    - name: Test
+      run: dotnet test tests/Weather.Api.Tests/Weather.Api.Tests.csproj --verbosity normal --logger "trx;LogFileName=test-results.trx" || true
+    - name: Report Test Results
+      uses: dorny/test-reporter@v1
+      with:
+        name: Weather.Api.Tests
+        path: "**/test-results.trx"
+        reporter: dotnet-trx
+        token: ${{ secrets.GITHUB_TOKEN }}
