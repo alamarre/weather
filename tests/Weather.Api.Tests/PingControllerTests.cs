@@ -3,6 +3,7 @@ using System.Threading;
 using System.Web.Http;
 using NUnit.Framework;
 using Weather.Api;
+#if NETFRAMEWORK
 
 namespace Weather.Api.Tests
 {
@@ -22,8 +23,9 @@ namespace Weather.Api.Tests
                 var response = client.SendAsync(request, CancellationToken.None).Result;
                 var content = response.Content.ReadAsStringAsync().Result;
 
-                Assert.AreEqual("pong", content.Trim('"'));
+                Assert.That("pong", Is.EqualTo(content.Trim('"')));
             }
         }
     }
 }
+#endif

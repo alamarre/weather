@@ -1,5 +1,5 @@
 using System;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.IO;
 using NUnit.Framework;
 using Weather.Infrastructure.Services;
@@ -48,7 +48,7 @@ namespace Weather.Api.Tests
             {
                 conn.Open();
                 var count = (int)cmd.ExecuteScalar();
-                Assert.Greater(count, 0);
+                Assert.That(count, Is.GreaterThan(0));
             }
         }
     }

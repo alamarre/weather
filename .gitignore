@@ -4,3 +4,4 @@ packages/
 nuget.exe
 TestResult.xml
 *.log
+.vs/
